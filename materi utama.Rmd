@@ -1,0 +1,655 @@
+---
+title: "Customer Demand Analysis Using DBSCAN"
+author: "David Tahi Ulubalang"
+date: "7 September 2021"
+output:
+  html_document:
+    number_sections: true
+    toc: true
+    toc_depth: 3
+    toc_float:
+      collapsed: false
+    df_print: paged
+    theme: united
+    highlight: breezedark
+    css: assets/style.css
+  pdf_document:
+    latex_engine: xelatex
+---
+
+```{r setup, include=FALSE}
+# clean up the environment
+rm(list = ls())
+
+# setup chunk options
+knitr::opts_chunk$set(
+  message = FALSE,
+  warning = FALSE,
+  fig.align = "center",
+  comment = "#>"
+)
+
+options(scipen = 9999)
+```
+
+<style>
+body {
+text-align: justify}
+</style>
+
+
+Materi ini diproduksi oleh tim dari Algoritma untuk *Customer Demand Analysis Using DBSCAN*. Materi berikut hanya ditujukan untuk kalangan terbatas, meliputi individu/personal yang menerima materi ini secara langsung dari lembaga pelatihan. Materi ini dilarang untuk direproduksi, didistribusikan, diterjemahkan, atau diadaptasikan dalam bentuk apapun di luar izin dari individu dan organisasi yang berkepentingan.
+
+**Algoritma** adalah pusat pendidikan Data Science di Jakarta. Kami mengadakan workshop dan program pelatihan untuk membantu para profesional dan pelajar untuk mendapatkan keahlian dalam berbagai bidang dalam ruang lingkup Data Science: data visualization, machine learning, data modeling, statistical inference, dan lain-lainnya.
+
+Sebelum masuk ke dalam materi dan menjalankan kode-kode di dalam materi ini, silakan anda melihat bagian **Library and Setup** untuk melihat dan memastikan semua persyaratan dasar untuk mengikuti materi ini sudah terpenuhi termasuk package-package yang diperlukan. Pada bagian **Tujuan Pembelajaran** anda dapat melihat secara umum apa saja yang akan dipelajari dalam modul materi ini. Kami harap materi ini akan bermanfaat bagi karir ataupun menambah keahlian peserta.
+
+
+
+# Preface {.tabset}
+
+## Pendahuluan
+
+Layanan *Ride Sharing* bukan hal baru bagi masyarakat perkotaan. Banyak aspek yang terbantu dengan adanya layanan ini. Tingginya permintaan akan layanan ini membuat customer harus menunggu cukup lama di waktu dan jam tertentu. Lamanya waktu tunggu dapat membuat pengguna tidak nyaman sehingga pengguna memilih menggunakan jasa transportasi lain atau beralih ke aplikasi kompetitor sehingga sehingga ada kemungkinan kehilangan pelanggan.
+
+
+Data lokasi pengguna dapat digunakan untuk menganalisis permintaan yang ada, ada banyak cara untuk melakukan ini salah satunya adalah clustering. Clustering merupakan salah satu teknik di machine learning yang mengelompokkan data berdasarkan karakteristiknya. Salah satu metode clustering yang dapat digunakan pada data spatial adalah DBSCAN (Density-based spatial clustering of applications with noise)
+
+Materi ini bertujuan untuk memberikan pemahaman kepada peserta workshop terkait penggunaan DBSCAN dalam menganalisa cluster menggunakan data spatial. Adapun setelah mempelajari materi ini peserta diharapkan dapat memahami kegunaan dan potensi DBSCAN clustering sesuai dengan proses bisnis yang ada di bidang industri yang dijalani oleh peserta.
+
+## Library dan Setup
+
+Untuk dapat mengikuti materi ini, peserta diharapkan sudah menginstall beberapa packages di bawah ini. Apabila package tersebut belum terinstall, silahkan jalankan chunk atau baris kode berikut. Apabila sudah ter-install, lewati chunk berikut dan muat package yang dibutuhkan dengan menjalankan chunk selanjutnya.
+
+```{r eval=FALSE}
+# install.packages(c("dplyr","arules", "arulesViz", "knir", "rmarkdown", "plotly"))
+```
+
+
+```{r}
+# data wrangling
+library(dplyr)
+library(lubridate)
+
+# clustering libs
+library(dbscan)
+library(factoextra)
+library(cluster)
+# visualization libs
+library(ggplot2)
+library(leaflet)
+library(pals)
+theme_set(theme_minimal())
+```
+
+
+## Tujuan Pembelajaran
+
+Tujuan utama dari workshop ini adalah untuk memberikan pengenalan yang komprehensif mengenai tools dan perangkat lunak yang digunakan untuk melakukan market basket analysis, yakni sebuah open-source populer: R. Adapun materi ini akan mencakup:
+
+
+- **Dasar Bahasa Pemrograman R**
+    - Introduction to R programming language
+    - Working with the RStudio environment
+    - Using R markdown for reproducible research
+    - Inspecting data structure
+    
+- **Konsep DBSCAN Clustering**
+    - Understanding the DBSCAN Clustering Terminology.
+    - Find Optimum Number of Clusters
+    - Cluster Visualization
+    
+- **Studi Kasus**
+    - Spatial Clustering on Ride Sharing Demands
+    - Create Interactive Maps
+
+
+# Perkenalan Tools
+
+Sebelum masuk ke dalam analisis data, kita perlu mengenal tools yang akan digunakan. Adapun dalam workshop ini, terdapat 2 tools yang digunakan untuk melakukan Market Basket Analysis, yaitu R dan RStudio.  
+
+R merupakan bahasa pemrograman di mana seperangkat instruksi akan diterjemahkan ke dalam bahasa komputer, sedangkan RStudio merupakan aplikasi tambahan yang dapat membantu pengguna R melakukan pekerjaannya. 
+
+```{r fig.width=5, echo=FALSE}
+knitr::include_graphics(path = "assets/rstudio.png")
+```
+
+
+## Mengapa mempelajari R?
+
+1. **Dibangun oleh ahli statistik, untuk ahli statistik.**      
+
+R adalah bahasa pemrograman statistik yang dibuat oleh Ross Ihaka dan Robert Gentleman di Departemen Statistik, di University of Auckland (Selandia Baru). R dibuat untuk analisis data, dan dengan demikian, berbeda dari bahasa pemrograman tradisional. R bukan hanya bahasa pemrograman statistik, R juga environment yang lengkap untuk analis data dan perangkat lunak analisis data yang paling banyak digunakan saat ini.     
+
+2. **Memiliki banyak Library**     
+
+R menyediakan banyak packages tambahan yang menambahkan fungsionalitas out-of-the-box untuk berbagai kegunaan: uji statistik, analisis deret waktu, visualisasi yang indah, dan berbagai tugas machine learning seperti algoritme regresi, algoritme klasifikasi, dan algoritme clustering. Komunitas R terkenal karena kontribusinya yang aktif dalam hal packages.      
+
+3. **Sumber Terbuka**      
+
+Bagian dari alasan komunitasnya yang aktif dan berkembang pesat adalah sifat sumber terbuka (open-source) dari R. Pengguna dapat berkontribusi dalam pembuatan packages, banyak tools statistik dan template kustomisasi untuk visualisasi yang tidak ditemukan dalam aplikasi statistik lain. 
+
+4. **Digunakan oleh berbagai perusahaan perangkat lunak Terbesar di Dunia**      
+
+R digunakan oleh Google untuk menghitung Return on Investment (ROI) dari berbagai iklan, dan seringkali digunakan untuk mengestimasi _casual effect_; seperti estimasi dampak dari sebuah fitur dari suatu aplikasi terhadap jumlah _download_ dari aplikasi tersebut, ataupun peningkatan tingkat penjualan setelah mengeluarkan _AdWords_. Bahkan, Google merilis _package_ R yang dapat digunakan oleh pengguna R lain untuk melakukan analisis serupa (lihat [`CausalImpact`](https://opensource.googleblog.com/2014/09/causalimpact-new-open-source-package.html){target="_blank"}). Banyak pegawai di Google telah berkontribusi aktif terhadap komunitas pengguna R: mereka seringkali aktif dalam berbagai grup pengguna R; [membuat _interface_ untuk _Google Prediction_](https://code.google.com/archive/p/google-prediction-api-r-client/){target="_blank"}; [membuat _coding style_ versi Google untuk R](http://web.stanford.edu/class/cs109l/unrestricted/resources/google-style.html){target="_blank"}, dan telah berkontribusi berbagai _package_ untuk R.
+    
+   
+**Microsoft** juga termasuk sebagai salah satu diantara perusahaan besar yang sangat bergantung pada R. Pada awalnya, Microsoft menggunakan R dalam: _platform_ Azure--tepatnya sebagai _capacity planning_; sistem _matchmaking_ pada Xbox's TrueSkill; analisis _churn_ untuk berbagai produk; dan beberapa _internal services_ lain dalam [Microsoft's line of products](http://blog.revolutionanalytics.com/2015/06/r-at-microsoft.html){target="_blank"}. Langkah penting yang diambil oleh Microsoft dalam hal ini adalah akuisisi dari _Revolution Analytics_, yang terkenal atas berbagai produk perkembangan di R; yang sekarang lebih dikenal sebagai _Microsoft R Server_, _Microsoft R Open_, _Microsoft Data Science Virtual Machine_, dll.   
+    
+    
+5. **Ready for Big Data**     
+
+R dapat terintegrasi dengan tools lain dalam pengolahan big data, library seperti RHadoop, ParallelR, merupakan sebagian dari library yang mampu membantu data engineers untuk melakukan komputasi pararel di R. 
+
+
+## Navigating RStudio
+
+Pada awal materi kita telah membahas perbedaan utama antara R dan RStudio. RStudio memiliki beberapa panel yang tersedia, jika anda sedang membaca materi ini pada format file RMarkdown (.Rmd), anda sedang melihat panel source dari RStudio. Sekarang mari kita bahas beberapa panel yang terdapat pada RStudio : 
+
+
+![](assets/panel.png)
+
+Terdapat 4 panel utama yang harus Anda pahami yaitu :    
+
+1. **Panel Source** : Panel ini merupakan fitur utama dari RStudio, panel ini menampilkan file yang sedang dibuka pada RStudio.        
+
+2. **Panel Console** : Panel ini menampilkan console asli dari R yang digunakan untuk berkomunikasi dengan R session. Terdapat beberapa tab lain seperti Terminal yang dapat digunakan untuk mengakses komputer Anda melalui Command Line Interface (CLI).     
+
+3. **Panel Environment / History** : Bagian ini menampilkan seluruh object R yang sudah dibuat selama session yang sama. Terdapat tab History yang berfungsi untuk melihat history dari kode yang sudah dijalankan sebelumnya.     
+
+4. **Panel Files/Plot/Packages/Help** :     
+
+  - Tab Files : Daftar dari berkas (file) yang berada dalam working directory.
+  - Tab Plot : Menampilkan visualisasi yang terbentuk
+  - Tab Packages : Berisi daftar packages yang sudah terinstall
+  - Tab Help : Menampilkan dokumentasi resmi dari setiap fungsi     
+  
+
+Materi ini dibuat menggunakan R markdown file (.Rmd) yang sudah terintegrasi dengan RStudio dan beberapa fitur sudah diatur dalam packages `rmarkdown`. R markdown dapat digunakan untuk membuat laporan dari analisa dengan standar yang tinggi. Jika Anda melihat lokasi original dari file ini maka Anda akan menemukan 3 file utama yaitu : file .Rmd, .html, dan .pdf. Adapun file HTML dan PDF dihasilkan dari R markdown dengan fungsi `knit` dari packages `rmarkdown.`
+
+Pada R markdown Anda dapat memasukkan narasi dari laporan yang dibuat serta kode program dari analisis Anda. Adapun tempat untuk memasukkan kode program pada R markdown disebut chunk. Terdapat 2 cara untuk membuat chunk yaitu :     
+
+1. menggunakan shortcut `ctrl` + `alt` + `i`     
+2. menggunakan tombol insert yang berada pada pojok kanan atas dari panel source kemudian pilih R     
+
+
+## Create Report with Rmarkdown
+
+Pada materi ini, kita akan menggunakan file Rmarkdown (.Rmd). Rmarkdown merupakan package/tools yang digunakan untuk membuat report dengan kualitas tinggi.Pada folder materi ini terdapat file dengan ekstensi `.html` yang merupakan hasil *knit* dari Rmarkdown.
+
+Untuk membuat file Rmarkdown, kita bisa klik menu file pada pojok kiri atas Rstudio, pilih `New File` dan pilih `R Markdown`. Window baru akan terbuka, anda dapat memilih output dari report yang diinginkan kemudian memasukkan nama serta judul dari report.
+
+```{r echo=FALSE}
+knitr::include_graphics("assets/rmarkdown.png")
+```
+
+## Shortcut
+
+Terdapat beberapa *key shortcut* yang akan memudahkan anda dalam menggunaan R. Beberapa diantaranya yaitu:
+
+* `Alt + -`: assign/ membuat objek di R (<-)
+* `Ctrl + Shift+ M`: membuat simbol piping (%>%) 
+* `Ctrl + Enter`: Menjalankan satu baris kode
+* `Ctrl + Shift + Enter`: Menjalankan satu kode dalam chunk
+
+
+
+# Dasar Pemrograman di R
+
+## Import Data
+
+Kita akan memulai analisa di R dengan membaca data yang sudah tersedia. Ada banyak format penyimpanan data mulai dari yang terstruktur hingga yang tidak terstruktur. Salah satu format data yang sering digunakan yaitu `.csv`. Untuk membaca data dengan format `.csv` bisa menggunakan fungsi `read.csv()`.
+
+```{r}
+scotty_df <- read.csv("data/scotty.csv")
+```
+
+Kode diatas berarti kita membuat object bernama `scotty_df` yang berisi data **scotty.csv** dari folder **data**. Tanda `<-` berarti kita menyimpan data kedalam object `scotty_df` sehingga objek tersebut dapat digunakan pada proses analisis selanjutnya. Untuk mengetahui apakah data anda berhasil disimpan bisa lihat panel environment dan lihat objek `scotty_df`. Pada *environment* anda akan melihat objek `scotty_df` berisi 124489 baris dan 10 kolom.
+
+Salah satu cara untuk melihat data adalah menggunakan fungsi `head()`. Fungsi head() akan menampilkan beberapa baris pertama, secara *default* akan menampilkan 6 baris pertama. Untuk melihat 10 baris pertama kita bisa menambahkan argumen `n=10`.
+
+```{r}
+head(scotty_df, # data
+     n = 10 # first 10 observation
+     )
+```
+
+data diatas merupakan data ride-sharing asal Turki yang bernama scotty. Deskripsi dari setiap kolom sebagai berikut:      
+
+- `id` : Transaction id
+- `trip_id` : Trip id
+- `driver_id`: Driver id
+- `rider_id`: Rider id
+- `src_lat`: Request source latitude
+- `src_lon`: Request source longitude
+- `dest_lat`: Requested destination latitude
+- `dest_lon`: Requested destination longitude
+- `status`: Trip status (all status considered as a demand)
+
+Untuk mengetahui 10 baris terakhir pada data, kita bisa menggunakan fungsi `tail()`.
+
+```{r}
+tail(scotty_df, n = 10) 
+```
+
+
+## Data Type and Structure
+
+Kita sudah mempelajari bagaimana mengecek sample dari data, sekarang kita perlu mengetahui tipe data dari masing masing kolom yang ada. Kita bisa menggunakan fungsi `str()` untuk melihat struktur serta dimensi dari data. 
+
+```{r}
+str(scotty_df)
+```
+`scotty_df` merupakan sebuah 'data.frame' atau tabel dengan 124489 baris dan 10 kolom. Nama dari setiap kolom tertera disebelah kanan (id, trip_id, dll). Teks `chr`, `num` menunjukkan tipe data dari masing - masing kolom. 
+
+### Data Type in R
+
+Terdapat 4 tipe data dasar yang sering digunakan di R yaitu : 
+
+```{r}
+# character
+a_char <- c("Algoritma", "Indonesia", "e-Commerce", "Jakarta")
+# numeric
+a_num <- c(-1, 1, 2, 3/4, 0.5)
+# integer
+an_int <- c(1L, 2L)
+# logical
+a_log <- c(TRUE, TRUE, FALSE)
+```
+
+Cara untuk mengetahui tipe data dari suatu objek, Anda dapat menggunakan fungsi `class()`
+```{r}
+class(a_char)
+```
+
+Lalu, apa yang akan terjadi jika dalam satu vector memiliki beberapa tipe data yang berbeda seperti chunk dibawah ini?
+
+```{r}
+mix <- c("Algoritma", 2021, TRUE)
+mix
+```
+
+Bila Anda perhatikan setiap nilai pada vector `mix` memiliki **petik dua**, artinya nilai tersebut merupakan sebuah objek dengan tipe character. Proses perubahan paksa dari suatu vector bisa disebut sebagai **implicit coercion**. Ilustrasi terjadinya implicit coercion dapat dilihat pada gambar di bawah ini:
+
+```{r echo = F}
+knitr::include_graphics("assets/level_data.png")
+```
+
+
+Ilustrasi di atas menunjukkan hirarki dari dasar tipe data di R. Pada kasus objek `mix`, tipe data yang paling spesifik adalah logical (pada elemen TRUE) dan tipe data paling umum yaitu character (pada elemen "Algoritma"). Implicit coercion akan mengubah tipe data ke tipe data paling umum dari elemen-elemen yang ada. Vector mix diubah menjadi tipe character karena terdapat elemen "Algoritma" yang bertipe character. 
+
+```{r}
+class(mix)
+```
+
+**Knowledge Check**
+
+Tentukan tipe data dari vector-vector di bawah ini?    
+
+- c(TRUE, 1L, 1/2)     
+- c("1", 12, 33.3)     
+- c(1,2,3,4L)     
+
+### Date and Time
+
+Tipe data Date dan Time merupakan tipe data yang cukup esensial pada kasus pemesanan ride-sharing, selain 4 tipe data dasar diatas R memiliki tipe data lainnya yaitu date dan datetime. Pada `scotty_df` terdapat kolom `start_time` yang menunjukkan waktu pemesanan pengguna. 
+
+Kita dapat memanipulasi data date dan time dengan menggunakan package `lubridate`. Anda bisa mengunduh cheatsheet [disini](https://evoldyn.gitlab.io/evomics-2018/ref-sheets/R_lubridate.pdf).
+
+Mari kita cek format kolom `start_time`. Kita bisa menggunakan tanda `$` untuk mengakes kolom tertentu pada data.
+
+```{r}
+head(scotty_df$start_time, 10)
+```
+Format waktu pada kolom `start_time` merupakan Tahun-Bulan-Hari JJ:MM:DD (Year-Month-Day HH:MM:SS). kita bisa mengubah kolom tersebut yang semula karakter (chr) menjadi datetime dengan menggunakan fungsi `ymd_hms()` dari package `lubridate`.
+
+```{r}
+# Transform data
+head( ymd_hms(scotty_df$start_time) , 10)
+```
+Beberapa format tipe data date:
+
+- 2020-12-25 => Year-Month-Day
+- 2020-25-12 => Year-Day-Month
+- 12-25-2020 => Month-Day-Year
+- 25-12-2020 => Day-Month-Year
+
+kalau kita lihat kembali tipe data dari `start_time` masih berupa `chr` untuk mengubahnya secara permanen kita perlu memperbaikinya dengan cara menimpanya. 
+
+Untuk membuat atau memodifikasi suatu kolom, kita bisa menggunakan fungsi `mutate()` dari *package* `dplyr`. 
+
+```{r}
+# mengubah kolom start_time menjadi datetime
+scotty_df <- scotty_df %>% 
+  mutate(start_time = ymd_hms(start_time))
+
+# cek struktur data kembali
+str(scotty_df)
+```
+
+arti dari kode diatas yaitu dari data `scotty_df` kita membuat kolom yang bernama `start_time` yang berisi hasil transformasi kolom `start_time` menjadi format datetime (POSIXct).
+
+Kita bisa mengetahui rentang waktu pengambilan data dengan menggunakan fungsi `range()`.
+```{r}
+range(scotty_df$start_time)
+```
+Dari hasil diatas kita tahu bahwa fata penggunaan ride sharing diperoleh selama bulan November 2017. Ada banyak informasi yang bisa kita ambil dari kolom yang bertipe data datetime seperti nama hari, jam, dll. Hal tersebut akan kita lakukan pada bagian selanjutnya. 
+
+## Data Preprocessing
+
+Ketika melakukan analisis pada suatu data tidak jarang data yang dimiliki tidak bisa langsung digunakan beberapa tahapan perlu dilakukan seperti subseting data, membuat kolom baru, sampai melakukan aggregasi data. Hal tersebut penting dilakukan agar seorang analis paham betul dengan data yang diolah. 
+
+### Feature Engineering
+
+Feature engineering merupakan tahapan mengekstrak informasi dari kolom yang sudah ada. Pada data `scotty_df` kita bisa mengekstrak informasi jam dan hari dari kolom `start_time` dengan bantuan dari packages lubridate
+
+```{r}
+scotty_clean <- scotty_df %>% 
+  mutate(date = as.Date(start_time), 
+         dow = wday(start_time, label = T, abbr = F), 
+         hour = hour(start_time))
+
+scotty_clean
+```
+
+Code diatas membuat 3 kolom baru (date, dow, hour) yang mengekstrak informasi dari `start_time`. Berikut penjelasan detail terkait fungsi diatas: 
+
+- `date = as.Date(start_time)` : membuat kolom bernama date yang berisi tanggal saja
+- `dow = wday(start_time, label = T, abbr = F)` : membuat kolom dow yang berisi nama hari
+  - `label = T` : bertujuan nilai yang dikeluarkan adalah nama hari bukan angka (1,2,3,dst)
+  - `abbr =T` : bertujuan agar nama hari tidak (F = FALSE) disingkat (Sun,Mon,.., dst)
+-  `hour = hour(start_time)` : bertujuan mengekstrak jam dari kolom `start_time`
+
+seluruh fungsi diatas harus didalam fungsi `mutate()` agar kolom baru terbentuk. Setelah itu hasil data.frame baru disimpan pada objek baru yang bernama `scotty_clean`.
+
+
+### Data Aggregation and Subsetting
+
+Sekarang kita sudah memiliki beberapa informasi tambahan, mari kita lakukan beberapa aggregasi untuk mengetahui data yang digunakan.
+
+Jika dilihat kembali kita memiliki kolom `status` yang menunjukkan berhasil (confirmed) atau gagal (nodrivers) mendapatkan driver. Untuk mengetahui proporsi dari kedua kategori tersebut kita bisa menggunaan fungsi `count()`
+
+```{r}
+scotty_clean %>% 
+  count(status)
+```
+
+Dari hasil diatas diketahui terdapat 5666 data yang tidak mendapatkan driver ketika memesan pada aplikasi, data ini yang akan menjadi fokus amantan kita. Sekarang kita cari tahu kapan paling sering terjadi `nodriver`. 
+
+
+Sebelum mencari tau kapan nodriver sering terjadi kita bisa melakukan subsetting data terlebih dahulu. Kita bisa menggunakan fungsi `filter()` untuk mengambil data yang berstatus `nodrivers` saja.
+
+```{r}
+scotty_nodriver <- scotty_clean %>% 
+  filter(status == "nodrivers")
+scotty_nodriver
+```
+
+
+setelah melakukan filtering pada data dengan kondisi status `nodrivers` kita bisa mencari tahu pada hari apa `nodrivers` sering terjadi.
+
+```{r}
+scotty_nodriver %>% 
+  count(dow, sort = T)
+```
+
+Hari Jumat merupakan hari yang paling sering tidak ada driver bila kita bandingkan dengan hari lainnya. Untuk analisa yang lebih mendalam kita harus mencari tau pada jam berapa nodrivers sering terjadi. Untuk mengetahui hal tersebut kita bisa mengambil data pada hari jumat saja kemudian melakukan aggregasi pada setiap jamnya.
+
+```{r}
+scotty_friday <- scotty_nodriver %>% 
+  filter(dow =="Friday") %>% 
+  count(hour, sort = T)
+scotty_friday
+```
+
+Dari hasil aggregasi diatas kita tahu bahwa pada jam 15 sampai 19 kasus nodrivers sering ditemui. Untuk mempermudah proses pemgambilan keputusan hasil diatas bisa kita visualisasikan.
+
+```{r}
+ggplot(scotty_friday, aes(x = as.factor(hour), y = n)) +
+  geom_col(fill = "dodgerblue3") +
+  geom_hline(aes(yintercept = mean(n)), col = "firebrick4") +
+  labs(title = "Frekuensi No Drivers pada Hari Jumat Setiap Jamnya", 
+       x = "Jam", 
+       y = "Frekuensi")
+```
+
+Visualisasi diatas menampilkan frekuensi nodrivers untuk setiap jamnya, garis merah horizontal menunjukkan nilai rata rata dari frekuensi. Bila kita amati jam 8 dan jam 15 hingga 19 merupakan jam dengan kondisi nodrivers diatas rata rata, terutama pada jam 18. Dari informasi yang sudah kita temukan fokus amatan pada analisis kali ini adalah kondisi nodriver yang terjadi di hari jumat pada jam 15 sampai 19. 
+
+
+# Clustering using DBSCAN
+
+Clustering merupakan salah satu teknik machine learning yang masuk ke unsupervised learning. Clustering memiliki tujuan untuk membagi data ke dalam beberapa kelompok berdasarkan kemiripan antar data. Cluster (kelompok) yang baik adalah cluster yang memiliki kemiripan yang besar antar anggota clusternya dan memiliki perbedaan yang signifikan dengan anggota cluster yang berbeda. Clustering dapat diterapkan dalam berbagai bidang seperti segmentasi pasar, cluster profiling, data spatial dll. Metode clustering sangat beragam, namun bila ingin dikelompokkan secara general berdasarkan metodenya, clustering dapat dibagi menjadi beberapa kelompok seperti gambar dibawah.
+
+![](assets/clustering.png)
+
+Pada kasus ini kita akan fokus pada clustering yang menggunakan metode kerapatan (density-based method) yaitu algoritma DBSCAN. 
+
+
+## DBSCAN
+
+Algoritma DBSCAN (Density-based Spatial Clustering of Application with Noise) merupakan metode clustering yang berbasis kepadatan (density-based) dari posisi amatan data dengan prinsip mengelompokkan data yang relatif berdekatan. DBSCAN sering diterapkan pada data yang banyak mengandung noise, hal ini dikarenakan DBSCAN tidak akan memasukkan data yang dianggap noise kedalam cluster manapun. 
+
+### Terminologi
+
+DBSCAN memerlukan dua parameter input sebelum melakukan proses clustering yaitu epsilon (eps) dan minimum points (minPts). Epsilon merupakan jarak maksimal antara dua data dalam satu cluster yang diizinkan, dan minimum points adalah banyaknya data minimal dalam jarak epsilon agar terbentuk suatu cluster. Metode jarak yang digunakan dalam DBSCAN adalah jarak Euclidian. Selain epsilon dan MinPts ada beberapa terminologi lain dalam metode DBSCAN yaitu :     
+
+* `directly density-reachable` : Observasi q berhubungan langsung dengan p, jika p adalah core point dan q merupakan tetangga dari p dalam jangkauan epsilon.     
+* `density-reachable` : Observasi q dan x dalam satu cluster namun x bukan tetangga dari q dalam jangkauan epsilon.     
+* `core point` :  Core point merupakan observasi yang memiliki jumlah tetangga lebih dari sama dengan dari MinPts pada jangkauan Eps.    
+* `border point` : Border point memiliki tetangga lebih sedikit dari Minpts namun ia merupakan tetangga dari core point.    
+* `outlier/noise point` : Observasi yang bukan border points atau core points.    
+
+```{r out.width="60%", fig.align='center', echo=FALSE}
+knitr::include_graphics("assets/dbscan terms.png")
+```
+
+### Cara Kerja DBSCAN
+
+Dalam proses pembuatan cluster menggunakan DBSCAN sebuah data akan dikelompokkan dengan tetangganya. Sepasang amatan dikatakan bertetangga apabila jarak antara dua amatan tersebut kurang dari sama dengan nilai epsilon. Secara sederhana cara kerja DBSCAN adalah sebagai berikut :    
+1. Tentukan nilai minPts dan epsilon (eps) yang akan digunakan.    
+2. Pilih data awal “p” secara acak.    
+3. Hitung jarak antara data “p” terhadap semua data menggunakan Euclidian distance.    
+4. Ambil semua amatan yang density-reachable dengan amatan “p”.    
+5. Jika amatan yang memenuhi nilai epsilon lebih dari jumlah minimal amatan dalam satu gerombol maka amatan “p” dikategorikan sebagai
+core points dan gerombol terbentuk.    
+6. Jika amatan “p” adalah border points dan tidak ada amatan yang density-reachable dengan amatan “p”, maka lanjutkan pada amatan
+lainnya.    
+7. Ulangi langkah 3 sampai 6 hingga semua amatan diproses.    
+
+## DBSCAN pada R
+
+### Data Eksplorasi 
+
+Data yang digunakan dalam proses clustering ini adalah data `multishape` dari packages `factoextra`. Data `multishape` memiliki 1100 observasi dan 3 variabel yaitu `x`, `y`, dan `shape`. Variabel yang digunakan pada proses clustering ini adalah `x` dan `y`.
+
+```{r message=F}
+data("multishapes")
+multishapes <- multishapes %>% 
+  select(x,y)
+dim(multishapes)
+```
+
+Secara visual data `multishape` dapat dilihat seperti plot dibawah. Pada plot tersebut terlihat bahwa kerapatan antar data membentuk beberapa bentuk seperti lingkaran dan persegi panjang. 
+
+```{r}
+ggplot(data = multishapes, aes(x = x, y = y)) +
+  geom_point(col = "firebrick4") 
+```
+
+### Pembuatan Cluster 
+
+Terdapat 2 parameter yang harus di tentukan sebelum membuat cluster yaitu eps dan Minpts. Tidak ada algoritma atau metode yang dapat menentukan secara sempurna kedua nilai tersebut karena itu semua bergantung pada jumlah dataset dan kasus yang diamati. 
+
+Nilai minpts dan eps dapat dicari menggunakan fungsi `kNNdistplot` dari packages `dbscan`. Ide utama dari fungsi ini adalah menghitung jarak rata2 untuk setiap data ke k tetangga terdekatnya (nearest neighbors). Nilai dari K ditentukan oleh user yang nantinya akan digunakan sebagai minPts pada proses clustering. Rata rata jarak yang sudah didapat divisualisasikan dalam plot secara ascending untuk mendapatkan "knee" yang menunjukkan nilai optimal dari eps berdasarkan K yang ditentukan.
+
+```{r}
+kNNdistplot(multishapes, k = 4)
+abline(h = 0.15, col = "red", lty = 2)
+```
+
+Berdasarkan plot diatas dengan menggunakan K = 4 didapat jarak yang optimal yaitu sekitar 0.15. Nilai 0.15 didapat dari posisi "knee" yang terbentuk pada plot. Hasil pencarian nilai eps yang optimal diatas dapat digunakan dalam proses clustering yang mana nilai eps adalah 0.15 dengan minPts 4. Tahap selanjutnya adalah pembuatan cluster menggunakan function dbscan dengan parameter yang sudah didapat.
+
+```{r}
+db_clust <- dbscan(multishapes, eps = 0.15, minPts = 4)
+db_clust
+```
+
+Hasil clustering dari data multishape dengan 1100 observasi adalah 5 cluster dan sebanyak 29 data diidentifikasi sebagai noise. Cluster 1 merupakan cluster dengan  anggota cluster terbanyak sedangkan cluster 5 merupakan cluster dengan anggota cluster paling sedikit. Hasil cluster yang sudah dibentuk dapat dilakukan visualisasi agar terlihat pola dari cluster yang didapat.
+
+```{r}
+multishapes <- multishapes %>% 
+  mutate(clust = db_clust$cluster, 
+         clust = ifelse(clust==0,"Noise",clust)) 
+
+ggplot(data =multishapes, aes(x = x, y = y)) +
+geom_point(aes(col = as.factor(clust))) 
+labs(col = "Cluster")
+```
+
+Dari hasil visualisasi diatas bisa dilihat bahwa cluster yang dihasilkan dbscan dapat mengelompokkan data sehingga bisa menangkap beberapa bentuk dari data. Noise yang terdeteksi pada data terlihat menyebar, hal ini dikarenakan data noise tidak berhasil ditangkap oleh eps yang ditentukan.
+
+DBSCAN merupakan metode clustering yang sangat sensitif terhadap perubahan parameter. Perbedaan kecil pada parameter yang ada (minPts, Eps) dapat menghasilkan cluster yang berbeda. Sebagai contoh pada data multishapes yang sebelumnya digunakan nilai eps 0.15 apabila diubah yang awalnya menjadi 0.2 akan menghasilkan cluster yang berbeda.
+
+```{r}
+db_clust <- dbscan(multishapes[,1:2], eps = 0.2, minPts = 4)
+db_clust
+```
+Mengubah parameter eps yang semula 0.15 menjadi 0.2 menghasilkan 4 cluster dan noise yang dihasilkan menjadi semakin berkurang menjadi 20. Cluster 1 merupakan cluster yang mengalami penambahan anggota cluster secara signifikan, yang semula 411 menjadi 820. Pola cluster yang sudah dibuat dapat divisualisasikan agar dapat melihat perbedaan dengan proses clustering sebelumnya.
+
+```{r}
+multishapes <- multishapes %>% 
+  mutate(clust = db_clust$cluster, 
+         clust = ifelse(clust==0,"Noise",clust)) 
+
+ggplot(data =multishapes, aes(x = x, y = y)) +
+geom_point(aes(col = as.factor(clust))) +
+labs(col = "Cluster")
+```
+
+Dari hasil visualisasi diatas bisa dilihat bahwa cluster 1 yang baru menggabungkan cluster 1 dan 2 pada proses cluster sebelumnya, serta noise yang awalnya berada disekitar cluster 1 menjadi anggota cluster 1.
+
+# Implementasi DBSCAN
+
+
+## Data Preparation
+
+Pada bagian sebelumnya kita sudah mempelajari metode DBSCAN, kita juga sudah melakukan eksplorasi data pada data scotty, sekarang kita akan menerapkan DBSCAN untuk membuat cluster pada data scotty. Dari hasil eksplorasi sebelumnya kita mengetahui bahwa status nodrivers sering terjadi pada hari jumat di jam 15 sampai 19, mari kita lihat jumlah nodrivers pada setiap tanggal dengan kondisi tersebut.
+
+```{r}
+scotty_nodriver %>% 
+  filter(hour %in% c(15:19), dow == "Friday") %>% 
+  count(date, sort = T)
+```
+
+Hasil diatas menunjukkan bahwa pada tanggal 2017-11-03 merupakan kasus nodrivers tertinggi, tanggal tersebut yang akan menjadi amatan kita dalam proses pembuatan cluster oleh sebab itu kita perlu mengambil data pada tanggal 2017-11-03 di jam 15 hingga 19.
+
+```{r}
+scotty_final <- scotty_nodriver %>% 
+  filter(date == as.Date("2017-11-03"), hour %in% c(15:19))
+
+scotty_final
+```
+
+Setelah melakukan filtering data yang terpilih sebanyak 945 baris, data inilah yang akan digunakan dalam proses clustering.Sebelum melakukan clustering ada baiknya kita memvisualisasikan data diatas pada peta sehingga kita mendapatkan gambaran bagaimana data tersebar. Untuk memvisualisasikan data pada peta (maps) bisa menggunakan package `leaflet` .
+
+```{r}
+scotty_final %>% 
+  leaflet() %>% 
+  addProviderTiles(providers$CartoDB.Positron) %>%
+  addCircleMarkers(lng = ~src_lon, 
+                   lat = ~src_lat, 
+                   radius =1)
+```
+
+## Clustering
+
+Setelah mengetahui bagaimana data tersebar pada peta kita bisa mulai membuat cluster dengan menentukan nilai eps dan minpts terlebih dahulu dengan bantuan knee plot. 
+
+Proses clustering hanya akan menggunakan data latitude dan longitude sehingga sebelum membuat knee plot perlu dilakukan seleksi kolom terlebih dahulu. 
+
+```{r}
+scotty_final %>% 
+  select(src_lat, src_lon) %>%  # mengambil kolom src_lat dan src_lon
+  kNNdistplot(k = 9)
+abline(h = 0.02, col = "red")
+```
+
+Pemilihan minpts (k) 9 menghasilkan nilai eps yang optimal sekitar 0.02, kita akan mencoba memasukkan kedua nilai tersebut sebagai parameter dalam DBSCAN dan melihat hasil cluster yang terbentuk.
+
+```{r}
+# cara1: menggunakan konsep piping
+dbscan1 <- scotty_final %>% 
+  select(src_lat, src_lon) %>% 
+  dbscan(eps = 0.02, minPts = 9)
+
+# cara2: menggunakan konsep base
+dbscan1 <- dbscan(scotty_final[,c('src_lat', 'src_lon')], eps = 0.02, minPts = 9)
+
+# Note: silahkan pilih salah satu cara yang dirasa paling nyaman
+dbscan1
+```
+<!-- perlu revisi dari segi bahasa -->
+dengan menggunakan eps = 0.02 dan minpts = 9 cluster yang terbentuk hanya 2, dimana cluster 1 berisi 797 data (sekitar 84% data). Hasil cluster yang terlalu besar bisa menjadi salah satu tanda proses clustering belum optimal, oleh sebab itu kita dapat mengecilkan nilai eps menjadi 0.01 agar cluster yang terbentuk lebih kecil.
+
+
+```{r}
+dbscan2 <- scotty_final %>% 
+  select(src_lat, src_lon) %>% 
+  dbscan(eps = 0.01, minPts = 9)
+dbscan2
+```
+Cluster yang terbentuk dengan menggunakan eps 0.01 dan minpts 9 adalah 9 cluster. Selain 9 cluster tersebut terdapat 242 data yang tidak masuk cluster manapun atau bisa disebut sebagai noise. Hasil cluster diatas dapat divisualisasikan pada peta namun sebelumnya label cluster tersebut perlu kita ambil dan memasukkannya pada data `scotty_final`. 
+
+```{r}
+scotty_final <- scotty_final %>% 
+  mutate(clust = as.factor(dbscan2$cluster))
+
+head(scotty_final)
+```
+Sekarang setiap data sudah memiliki label clusternya masing masing, agar lebih mudah membedakannya kita memberikan warna untuk tiap cluster. Salah satu cara pewarnaan yang paling mudah adalah dengan menggunakan pallete color yang disediakan oleh package `pals`. Dibawah ini kita membuat pallete color berdasarkan jumlah cluster yang terbentuk.
+
+```{r}
+# Create palet color
+n_clust <- length(unique(scotty_final$clust)) - 1 
+
+pal_col <- data.frame(
+  clust = as.factor(c(1:n_clust)), 
+  col = pals::glasbey(n = n_clust)
+  )
+pal_col
+```
+
+Setelah memiliki refrensi warna kita bisa menggabungkannya dengan dengan data `scotty_final` dengan menggunakan fungsi `left_join()`.
+
+```{r}
+# join pal color with dataframe
+scotty_final %>% 
+  left_join(pal_col) %>% 
+  filter(clust !=0) %>% 
+  leaflet() %>% 
+  addProviderTiles(providers$CartoDB.Positron) %>%
+  addCircleMarkers(lng = ~src_lon, 
+                   lat = ~src_lat, 
+                   radius =1,
+                   color = ~col,
+                   opacity = 1)
+```
+
+Hasil visualisasi diatas menampilkan 9 cluster yang terbentuk yang diwakili setiap warna. Bisa kita bilang juga bahwa 9 daerah tersebut merupakan daerah dengan status `nodrivers` terpadat pada hari jumat pukul 15 sampai 19. 
+
+Jika diperhatikan cluster 1 dengan warna biru tua merupakan cluster terbesar, hal ini terjadi karena kerapatan didaerah tersebut berbeda dengan daerah lain. Solusi untuk memecah cluster tersebut adalah dengan melakuan clustering ulang pada cluster 1 saja, sehingga nilai ukuran kerapatannya (eps dan minpts) tidak mengganggu cluster yang sudah terbentuk. 
+
+
+
+## Penerapan lainnya pada DBSCAN
+
+1. Deteksi dini kebakaran hutan berdasarkan titi panas
+2. Deteksi Outlier pada data
+
+
+
+
+
+
+
+
