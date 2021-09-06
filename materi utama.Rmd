@@ -460,7 +460,7 @@ lainnya.
 
 ### Data Eksplorasi 
 
-Data yang digunakan dalam proses clustering ini adalah data `multishape` dari packages `factoextra`. Data `multishape` memiliki 1100 observasi dan 3 variabel yaitu `x`, `y`, dan `shape`. Variabel yang digunakan pada proses clustering ini adalah `x` dan `y`.
+Data yang digunakan sebagai ilustrasi pada clustering ini adalah data `multishape` dari packages `factoextra`. Data `multishape` memiliki 1100 observasi dan 3 variabel yaitu `x`, `y`, dan `shape`. Variabel yang digunakan pada proses clustering ini adalah `x` dan `y`.
 
 ```{r message=F}
 data("multishapes")
@@ -478,9 +478,9 @@ ggplot(data = multishapes, aes(x = x, y = y)) +
 
 ### Pembuatan Cluster 
 
-Terdapat 2 parameter yang harus di tentukan sebelum membuat cluster yaitu eps dan Minpts. Tidak ada algoritma atau metode yang dapat menentukan secara sempurna kedua nilai tersebut karena itu semua bergantung pada jumlah dataset dan kasus yang diamati. 
+Terdapat 2 parameter yang harus di tentukan sebelum membuat cluster yaitu eps dan Minpts. Tidak ada algoritma atau metode yang dapat menentukan secara sempurna kedua nilai tersebut karena itu semua bergantung pada jumlah dataset dan kasus yang diamati. Namun sebagai acuan awal kita bisa menggunakan fungsi `kNNdistplot()` dari packages `dbscan` untuk mencari kombinasi nilai minpts dan eps .
 
-Nilai minpts dan eps dapat dicari menggunakan fungsi `kNNdistplot` dari packages `dbscan`. Ide utama dari fungsi ini adalah menghitung jarak rata2 untuk setiap data ke k tetangga terdekatnya (nearest neighbors). Nilai dari K ditentukan oleh user yang nantinya akan digunakan sebagai minPts pada proses clustering. Rata rata jarak yang sudah didapat divisualisasikan dalam plot secara ascending untuk mendapatkan "knee" yang menunjukkan nilai optimal dari eps berdasarkan K yang ditentukan.
+Ide utama dari fungsi `kNNdistplot()` adalah menghitung jarak rata2 untuk setiap data ke k tetangga terdekatnya (nearest neighbors). Nilai dari K ditentukan oleh user yang nantinya akan digunakan sebagai minPts pada proses clustering. Rata rata jarak yang sudah didapat divisualisasikan dalam plot secara ascending untuk mendapatkan "knee" yang menunjukkan nilai optimal dari eps berdasarkan K yang ditentukan.
 
 ```{r}
 kNNdistplot(multishapes, k = 4)
@@ -522,7 +522,7 @@ multishapes <- multishapes %>%
          clust = ifelse(clust==0,"Noise",clust)) 
 
 ggplot(data =multishapes, aes(x = x, y = y)) +
-geom_point(aes(col = as.factor(clust))) +
+geom_point(aes(col = as.factor(clust)))
 labs(col = "Cluster")
 ```
 
@@ -530,10 +530,9 @@ Dari hasil visualisasi diatas bisa dilihat bahwa cluster 1 yang baru menggabungk
 
 # Implementasi DBSCAN
 
-
 ## Data Preparation
 
-Pada bagian sebelumnya kita sudah mempelajari metode DBSCAN, kita juga sudah melakukan eksplorasi data pada data scotty, sekarang kita akan menerapkan DBSCAN untuk membuat cluster pada data scotty. Dari hasil eksplorasi sebelumnya kita mengetahui bahwa status nodrivers sering terjadi pada hari jumat di jam 15 sampai 19, mari kita lihat jumlah nodrivers pada setiap tanggal dengan kondisi tersebut.
+Pada bagian sebelumnya kita sudah mempelajari metode DBSCAN, dan sudah melakukan eksplorasi data pada data scotty. Sekarang kita akan menerapkan DBSCAN untuk membuat cluster pada data scotty. Dari hasil eksplorasi sebelumnya kita mengetahui bahwa status `nodrivers` sering terjadi pada hari jumat di jam 15 sampai 19, mari kita lihat jumlah `nodrivers` pada setiap tanggal dengan kondisi tersebut.
 
 ```{r}
 scotty_nodriver %>% 
@@ -541,7 +540,7 @@ scotty_nodriver %>%
   count(date, sort = T)
 ```
 
-Hasil diatas menunjukkan bahwa pada tanggal 2017-11-03 merupakan kasus nodrivers tertinggi, tanggal tersebut yang akan menjadi amatan kita dalam proses pembuatan cluster oleh sebab itu kita perlu mengambil data pada tanggal 2017-11-03 di jam 15 hingga 19.
+Hasil diatas menunjukkan bahwa pada tanggal 2017-11-03 merupakan kasus `nodrivers` tertinggi, tanggal tersebut yang akan menjadi amatan kita dalam proses pembuatan cluster oleh sebab itu kita perlu mengambil data pada tanggal 2017-11-03 di jam 15 hingga 19.
 
 ```{r}
 scotty_final <- scotty_nodriver %>% 
@@ -550,7 +549,7 @@ scotty_final <- scotty_nodriver %>%
 scotty_final
 ```
 
-Setelah melakukan filtering data yang terpilih sebanyak 945 baris, data inilah yang akan digunakan dalam proses clustering.Sebelum melakukan clustering ada baiknya kita memvisualisasikan data diatas pada peta sehingga kita mendapatkan gambaran bagaimana data tersebar. Untuk memvisualisasikan data pada peta (maps) bisa menggunakan package `leaflet` .
+Setelah melakukan filtering data yang terpilih sebanyak 945 baris, data inilah yang akan digunakan dalam proses clustering. Sebelum melakukan clustering ada baiknya kita memvisualisasikan data diatas pada peta (maps) sehingga kita mendapatkan gambaran bagaimana data tersebar. Untuk memvisualisasikan data pada peta (maps) bisa menggunakan package `leaflet` .
 
 ```{r}
 scotty_final %>% 
@@ -561,9 +560,12 @@ scotty_final %>%
                    radius =1)
 ```
 
+
+fungsi `leaflet()` digunakan sebagai dasar dari map yang dibuat, kemudian untuk menambahkan basemap kita bisa gunakan fungsi `addProviderTiles()`. Ada banyak penyedia basemap (providers) kita bisa memilihnya sesuai kebutuhan, disini provider yang digunakan adalah `CartoDB.Positron` agar terlihat kontras dengan data point-nya. Terakhir kita bisa menambahkan markers untuk setiap data dengan fungsi `addCircleMarkers()`, masukkan longitude dan latitude sebagai parameter dan radius untu mengatur besar kecilnya marker. tanda `~` pada `~src_lon` menunjukkan bahwa kita akan menggunakan kolom `src_lon` dari data `scotty_final`.
+
 ## Clustering
 
-Setelah mengetahui bagaimana data tersebar pada peta kita bisa mulai membuat cluster dengan menentukan nilai eps dan minpts terlebih dahulu dengan bantuan knee plot. 
+Setelah mengetahui persebaran data melalui peta, kita bisa mulai membuat cluster dengan menentukan nilai eps dan minpts terlebih dahulu dengan bantuan knee plot. 
 
 Proses clustering hanya akan menggunakan data latitude dan longitude sehingga sebelum membuat knee plot perlu dilakukan seleksi kolom terlebih dahulu. 
 
@@ -574,7 +576,7 @@ scotty_final %>%
 abline(h = 0.02, col = "red")
 ```
 
-Pemilihan minpts (k) 9 menghasilkan nilai eps yang optimal sekitar 0.02, kita akan mencoba memasukkan kedua nilai tersebut sebagai parameter dalam DBSCAN dan melihat hasil cluster yang terbentuk.
+Pemilihan minpts (k) 9 menghasilkan nilai eps yang optimal sekitar 0.02, kita akan mencoba memasukkan kedua nilai tersebut sebagai parameter dalam fungsi `dbscan()` dan melihat hasil cluster yang terbentuk.
 
 ```{r}
 # cara1: menggunakan konsep piping
@@ -588,9 +590,8 @@ dbscan1 <- dbscan(scotty_final[,c('src_lat', 'src_lon')], eps = 0.02, minPts = 9
 # Note: silahkan pilih salah satu cara yang dirasa paling nyaman
 dbscan1
 ```
-<!-- perlu revisi dari segi bahasa -->
-dengan menggunakan eps = 0.02 dan minpts = 9 cluster yang terbentuk hanya 2, dimana cluster 1 berisi 797 data (sekitar 84% data). Hasil cluster yang terlalu besar bisa menjadi salah satu tanda proses clustering belum optimal, oleh sebab itu kita dapat mengecilkan nilai eps menjadi 0.01 agar cluster yang terbentuk lebih kecil.
 
+Hasil clustering dengan menggunakan parameter eps = 0.02 dan minpts = 9 adalah terbentuknya 2 cluster, dimana cluster 1 berisi 797 data (sekitar 84% data). Hasil cluster yang terlalu besar bisa menjadi salah satu tanda proses clustering belum optimal, oleh sebab itu kita dapat mengecilkan nilai eps menjadi 0.01 agar cluster yang terbentuk lebih rapat.
 
 ```{r}
 dbscan2 <- scotty_final %>% 
@@ -598,6 +599,7 @@ dbscan2 <- scotty_final %>%
   dbscan(eps = 0.01, minPts = 9)
 dbscan2
 ```
+
 Cluster yang terbentuk dengan menggunakan eps 0.01 dan minpts 9 adalah 9 cluster. Selain 9 cluster tersebut terdapat 242 data yang tidak masuk cluster manapun atau bisa disebut sebagai noise. Hasil cluster diatas dapat divisualisasikan pada peta namun sebelumnya label cluster tersebut perlu kita ambil dan memasukkannya pada data `scotty_final`. 
 
 ```{r}
@@ -606,7 +608,8 @@ scotty_final <- scotty_final %>%
 
 head(scotty_final)
 ```
-Sekarang setiap data sudah memiliki label clusternya masing masing, agar lebih mudah membedakannya kita memberikan warna untuk tiap cluster. Salah satu cara pewarnaan yang paling mudah adalah dengan menggunakan pallete color yang disediakan oleh package `pals`. Dibawah ini kita membuat pallete color berdasarkan jumlah cluster yang terbentuk.
+
+Sekarang setiap data sudah memiliki label clusternya masing masing, agar lebih mudah membedakan tiap cluster kita bisa memberikan warna untuk setiap cluster. Salah satu cara pewarnaan yang paling mudah adalah dengan menggunakan palette color yang disediakan oleh package `pals`. Dibawah ini kita membuat palette color berdasarkan jumlah cluster yang terbentuk.
 
 ```{r}
 # Create palet color
@@ -619,7 +622,7 @@ pal_col <- data.frame(
 pal_col
 ```
 
-Setelah memiliki refrensi warna kita bisa menggabungkannya dengan dengan data `scotty_final` dengan menggunakan fungsi `left_join()`.
+Refrensi warna diatas bisa kita gabungkan dengan data scotty_final dengan menggunakan fungsi `left_join()` sehingga pada data scotty_final akan terbentuk kolom baru yaitu col. 
 
 ```{r}
 # join pal color with dataframe
@@ -635,21 +638,19 @@ scotty_final %>%
                    opacity = 1)
 ```
 
-Hasil visualisasi diatas menampilkan 9 cluster yang terbentuk yang diwakili setiap warna. Bisa kita bilang juga bahwa 9 daerah tersebut merupakan daerah dengan status `nodrivers` terpadat pada hari jumat pukul 15 sampai 19. 
 
-Jika diperhatikan cluster 1 dengan warna biru tua merupakan cluster terbesar, hal ini terjadi karena kerapatan didaerah tersebut berbeda dengan daerah lain. Solusi untuk memecah cluster tersebut adalah dengan melakuan clustering ulang pada cluster 1 saja, sehingga nilai ukuran kerapatannya (eps dan minpts) tidak mengganggu cluster yang sudah terbentuk. 
+Visualisasi diatas menampilkan 9 cluster yang diwakili tiap warna tanpa menampilkan noise. Daerah tempat cluster terbentuk merupakan daerah yang memiliki kondisi `nodrivers` cukup tinggi di hari jumat pada pukul 15 hingga 19. Jika diperhatikan cluster 1 (biru tua) merupakan cluster terbesar, hal ini terjadi karena kerapatan didaerah tersebut lebih rapat dibandingkan dengan daerah lain.
+
+Solusi untuk cluster memecah cluster yang besar adalah dengan melakuan clustering ulang pada cluster 1 saja, sehingga nilai ukuran kerapatannya (eps dan minpts) tidak mengganggu cluster yang sudah terbentuk.
+
+Dari hasil cluster diatas pemilik aplikasi dapat memfokuskan mitra driversnya pada cluster tersebut sehingga kejadian nodrivers bisa dikurangi
 
 
 
 ## Penerapan lainnya pada DBSCAN
 
-1. Deteksi dini kebakaran hutan berdasarkan titi panas
-2. Deteksi Outlier pada data
-
-
-
-
-
-
-
-
+DBSCAN sering digunakan pada pengelompokkan data spatial karena sifatnya yang mengelompokkan data berdasarkan kerapatannya. Selain itu DBSCAN juga dapat dimanfaatkan untuk menghilangkan noise pada data sebelum data digunakan pada proses analisa selanjutnya. Berikut beberapa penerapan DBSCAN:        
+1. [Spatial Clustering Berbasis Densitas untuk Persebaran Titik Panas sebagai Indikator Kebakaran Hutan dan Lahan Gambut di Sumatera](
+https://repository.ipb.ac.id/handle/123456789/73111)            
+2. [Hotspot Detection of Dengue Fever Outbreaks Using DBSCAN Algorithm](https://ieeexplore.ieee.org/abstract/document/8776916)              
+3. [Clustering Saham Indonesia](https://algotech.netlify.app/blog/stock-cluster/)           
