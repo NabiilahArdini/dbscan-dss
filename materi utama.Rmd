@@ -204,7 +204,7 @@ Kita akan memulai analisa di R dengan membaca data yang sudah tersedia. Ada bany
 scotty_df <- read.csv("data/scotty.csv")
 ```
 
-Kode diatas berarti kita membuat object bernama `scotty_df` yang berisi data **scotty.csv** dari folder **data**. Tanda `<-` berarti kita menyimpan data kedalam object `scotty_df` sehingga objek tersebut dapat digunakan pada proses analisis selanjutnya. Untuk mengetahui apakah data anda berhasil disimpan bisa lihat panel environment dan lihat objek `scotty_df`. Pada *environment* anda akan melihat objek `scotty_df` berisi 124489 baris dan 10 kolom.
+Kode di atas berarti kita membuat object bernama `scotty_df` yang berisi data **scotty.csv** dari folder **data**. Tanda `<-` berarti kita menyimpan data kedalam object `scotty_df` sehingga objek tersebut dapat digunakan pada proses analisis selanjutnya. Untuk mengetahui apakah data anda berhasil disimpan bisa lihat panel environment dan lihat objek `scotty_df`. Pada *environment* anda akan melihat objek `scotty_df` berisi 124489 baris dan 10 kolom.
 
 Salah satu cara untuk melihat data adalah menggunakan fungsi `head()`. Fungsi head() akan menampilkan beberapa baris pertama, secara *default* akan menampilkan 6 baris pertama. Untuk melihat 10 baris pertama kita bisa menambahkan argumen `n=10`.
 
@@ -214,7 +214,7 @@ head(scotty_df, # data
      )
 ```
 
-data diatas merupakan data ride-sharing asal Turki yang bernama scotty. Deskripsi dari setiap kolom sebagai berikut:      
+data di atas merupakan data ride-sharing asal Turki yang bernama scotty. Deskripsi dari setiap kolom sebagai berikut:      
 
 - `id` : Transaction id
 - `trip_id` : Trip id
@@ -292,7 +292,7 @@ Tentukan tipe data dari vector-vector di bawah ini?
 
 ### Date and Time
 
-Tipe data Date dan Time merupakan tipe data yang cukup esensial pada kasus pemesanan ride-sharing, selain 4 tipe data dasar diatas R memiliki tipe data lainnya yaitu date dan datetime. Pada `scotty_df` terdapat kolom `start_time` yang menunjukkan waktu pemesanan pengguna. 
+Tipe data Date dan Time merupakan tipe data yang cukup esensial pada kasus pemesanan ride-sharing, selain 4 tipe data dasar di atas R memiliki tipe data lainnya yaitu date dan datetime. Pada `scotty_df` terdapat kolom `start_time` yang menunjukkan waktu pemesanan pengguna. 
 
 Kita dapat memanipulasi data date dan time dengan menggunakan package `lubridate`. Anda bisa mengunduh cheatsheet [disini](https://evoldyn.gitlab.io/evomics-2018/ref-sheets/R_lubridate.pdf).
 
@@ -327,13 +327,13 @@ scotty_df <- scotty_df %>%
 str(scotty_df)
 ```
 
-arti dari kode diatas yaitu dari data `scotty_df` kita membuat kolom yang bernama `start_time` yang berisi hasil transformasi kolom `start_time` menjadi format datetime (POSIXct).
+arti dari kode di atas yaitu dari data `scotty_df` kita membuat kolom yang bernama `start_time` yang berisi hasil transformasi kolom `start_time` menjadi format datetime (POSIXct).
 
 Kita bisa mengetahui rentang waktu pengambilan data dengan menggunakan fungsi `range()`.
 ```{r}
 range(scotty_df$start_time)
 ```
-Dari hasil diatas kita tahu bahwa fata penggunaan ride sharing diperoleh selama bulan November 2017. Ada banyak informasi yang bisa kita ambil dari kolom yang bertipe data datetime seperti nama hari, jam, dll. Hal tersebut akan kita lakukan pada bagian selanjutnya. 
+Dari hasil di atas kita tahu bahwa fata penggunaan ride sharing diperoleh selama bulan November 2017. Ada banyak informasi yang bisa kita ambil dari kolom yang bertipe data datetime seperti nama hari, jam, dll. Hal tersebut akan kita lakukan pada bagian selanjutnya. 
 
 ## Data Preprocessing
 
@@ -352,7 +352,7 @@ scotty_clean <- scotty_df %>%
 scotty_clean
 ```
 
-Code diatas membuat 3 kolom baru (date, dow, hour) yang mengekstrak informasi dari `start_time`. Berikut penjelasan detail terkait fungsi diatas: 
+Code di atas membuat 3 kolom baru (date, dow, hour) yang mengekstrak informasi dari `start_time`. Berikut penjelasan detail terkait fungsi di atas: 
 
 - `date = as.Date(start_time)` : membuat kolom bernama date yang berisi tanggal saja
 - `dow = wday(start_time, label = T, abbr = F)` : membuat kolom dow yang berisi nama hari
@@ -360,7 +360,7 @@ Code diatas membuat 3 kolom baru (date, dow, hour) yang mengekstrak informasi da
   - `abbr =T` : bertujuan agar nama hari tidak (F = FALSE) disingkat (Sun,Mon,.., dst)
 -  `hour = hour(start_time)` : bertujuan mengekstrak jam dari kolom `start_time`
 
-seluruh fungsi diatas harus didalam fungsi `mutate()` agar kolom baru terbentuk. Setelah itu hasil data.frame baru disimpan pada objek baru yang bernama `scotty_clean`.
+seluruh fungsi di atas harus didalam fungsi `mutate()` agar kolom baru terbentuk. Setelah itu hasil data.frame baru disimpan pada objek baru yang bernama `scotty_clean`.
 
 
 ### Data Aggregation and Subsetting
@@ -374,17 +374,15 @@ scotty_clean %>%
   count(status)
 ```
 
-Dari hasil diatas diketahui terdapat 5666 data yang tidak mendapatkan driver ketika memesan pada aplikasi, data ini yang akan menjadi fokus amantan kita. Sekarang kita cari tahu kapan paling sering terjadi `nodriver`. 
+Dari hasil di atas diketahui terdapat 5666 data yang tidak mendapatkan driver ketika memesan pada aplikasi, data ini yang akan menjadi fokus amantan kita. Sekarang kita cari tahu kapan paling sering terjadi `nodrivers`. 
 
-
-Sebelum mencari tau kapan nodriver sering terjadi kita bisa melakukan subsetting data terlebih dahulu. Kita bisa menggunakan fungsi `filter()` untuk mengambil data yang berstatus `nodrivers` saja.
+Sebelum mencari tau kapan `nodrivers` sering terjadi kita bisa melakukan subsetting data terlebih dahulu. Kita bisa menggunakan fungsi `filter()` untuk mengambil data yang berstatus `nodrivers` saja.
 
 ```{r}
 scotty_nodriver <- scotty_clean %>% 
   filter(status == "nodrivers")
 scotty_nodriver
 ```
-
 
 setelah melakukan filtering pada data dengan kondisi status `nodrivers` kita bisa mencari tahu pada hari apa `nodrivers` sering terjadi.
 
@@ -393,7 +391,7 @@ scotty_nodriver %>%
   count(dow, sort = T)
 ```
 
-Hari Jumat merupakan hari yang paling sering tidak ada driver bila kita bandingkan dengan hari lainnya. Untuk analisa yang lebih mendalam kita harus mencari tau pada jam berapa nodrivers sering terjadi. Untuk mengetahui hal tersebut kita bisa mengambil data pada hari jumat saja kemudian melakukan aggregasi pada setiap jamnya.
+Hari Jumat merupakan hari yang paling sering tidak ada driver bila kita bandingkan dengan hari lainnya. Untuk analisa yang lebih mendalam kita harus mencari tau pada jam berapa `nodrivers` sering terjadi. Untuk mengetahui hal tersebut kita bisa mengambil data pada hari jumat saja kemudian melakukan aggregasi pada setiap jamnya.
 
 ```{r}
 scotty_friday <- scotty_nodriver %>% 
@@ -402,7 +400,7 @@ scotty_friday <- scotty_nodriver %>%
 scotty_friday
 ```
 
-Dari hasil aggregasi diatas kita tahu bahwa pada jam 15 sampai 19 kasus nodrivers sering ditemui. Untuk mempermudah proses pemgambilan keputusan hasil diatas bisa kita visualisasikan.
+Dari hasil aggregasi di atas kita tahu bahwa pada jam 15 sampai 19 kasus `nodrivers` sering ditemui. Untuk mempermudah proses pemgambilan keputusan hasil di atas bisa kita visualisasikan.
 
 ```{r}
 ggplot(scotty_friday, aes(x = as.factor(hour), y = n)) +
@@ -413,7 +411,7 @@ ggplot(scotty_friday, aes(x = as.factor(hour), y = n)) +
        y = "Frekuensi")
 ```
 
-Visualisasi diatas menampilkan frekuensi nodrivers untuk setiap jamnya, garis merah horizontal menunjukkan nilai rata rata dari frekuensi. Bila kita amati jam 8 dan jam 15 hingga 19 merupakan jam dengan kondisi nodrivers diatas rata rata, terutama pada jam 18. Dari informasi yang sudah kita temukan fokus amatan pada analisis kali ini adalah kondisi nodriver yang terjadi di hari jumat pada jam 15 sampai 19. 
+Visualisasi di atas menampilkan frekuensi `nodrivers` untuk setiap jamnya, garis merah horizontal menunjukkan nilai rata rata dari frekuensi. Bila kita amati jam 8 dan jam 15 hingga 19 merupakan jam dengan kondisi `nodrivers` di atas rata rata, terutama pada jam 18. Dari informasi yang sudah kita temukan fokus amatan pada analisis kali ini adalah kondisi `nodrivers` yang terjadi di hari jumat pada jam 15 sampai 19. 
 
 
 # Clustering using DBSCAN
@@ -487,7 +485,7 @@ kNNdistplot(multishapes, k = 4)
 abline(h = 0.15, col = "red", lty = 2)
 ```
 
-Berdasarkan plot diatas dengan menggunakan K = 4 didapat jarak yang optimal yaitu sekitar 0.15. Nilai 0.15 didapat dari posisi "knee" yang terbentuk pada plot. Hasil pencarian nilai eps yang optimal diatas dapat digunakan dalam proses clustering yang mana nilai eps adalah 0.15 dengan minPts 4. Tahap selanjutnya adalah pembuatan cluster menggunakan function dbscan dengan parameter yang sudah didapat.
+Berdasarkan plot di atas dengan menggunakan K = 4 didapat jarak yang optimal yaitu sekitar 0.15. Nilai 0.15 didapat dari posisi "knee" yang terbentuk pada plot. Hasil pencarian nilai eps yang optimal di atas dapat digunakan dalam proses clustering yang mana nilai eps adalah 0.15 dengan minPts 4. Tahap selanjutnya adalah pembuatan cluster menggunakan function dbscan dengan parameter yang sudah didapat.
 
 ```{r}
 db_clust <- dbscan(multishapes, eps = 0.15, minPts = 4)
@@ -506,7 +504,7 @@ geom_point(aes(col = as.factor(clust)))
 labs(col = "Cluster")
 ```
 
-Dari hasil visualisasi diatas bisa dilihat bahwa cluster yang dihasilkan dbscan dapat mengelompokkan data sehingga bisa menangkap beberapa bentuk dari data. Noise yang terdeteksi pada data terlihat menyebar, hal ini dikarenakan data noise tidak berhasil ditangkap oleh eps yang ditentukan.
+Dari hasil visualisasi di atas bisa dilihat bahwa cluster yang dihasilkan dbscan dapat mengelompokkan data sehingga bisa menangkap beberapa bentuk dari data. Noise yang terdeteksi pada data terlihat menyebar, hal ini dikarenakan data noise tidak berhasil ditangkap oleh eps yang ditentukan.
 
 DBSCAN merupakan metode clustering yang sangat sensitif terhadap perubahan parameter. Perbedaan kecil pada parameter yang ada (minPts, Eps) dapat menghasilkan cluster yang berbeda. Sebagai contoh pada data multishapes yang sebelumnya digunakan nilai eps 0.15 apabila diubah yang awalnya menjadi 0.2 akan menghasilkan cluster yang berbeda.
 
@@ -526,13 +524,15 @@ geom_point(aes(col = as.factor(clust)))
 labs(col = "Cluster")
 ```
 
-Dari hasil visualisasi diatas bisa dilihat bahwa cluster 1 yang baru menggabungkan cluster 1 dan 2 pada proses cluster sebelumnya, serta noise yang awalnya berada disekitar cluster 1 menjadi anggota cluster 1.
+Dari hasil visualisasi di atas bisa dilihat bahwa cluster 1 yang baru menggabungkan cluster 1 dan 2 pada proses cluster sebelumnya, serta noise yang awalnya berada disekitar cluster 1 menjadi anggota cluster 1.
 
 # Implementasi DBSCAN
 
 ## Data Preparation
 
-Pada bagian sebelumnya kita sudah mempelajari metode DBSCAN, dan sudah melakukan eksplorasi data pada data scotty. Sekarang kita akan menerapkan DBSCAN untuk membuat cluster pada data scotty. Dari hasil eksplorasi sebelumnya kita mengetahui bahwa status `nodrivers` sering terjadi pada hari jumat di jam 15 sampai 19, mari kita lihat jumlah `nodrivers` pada setiap tanggal dengan kondisi tersebut.
+Pada bagian sebelumnya kita sudah mempelajari metode DBSCAN, dan sudah melakukan eksplorasi data pada data scotty. Sekarang kita akan menerapkan DBSCAN untuk membuat cluster pada data scotty. Data scotty merekam banyaknya demand yang diterima oleh perusahaan pada waktu tertentu dan dari beragam lokasi (longitude dan latitude). Jumlah demand yang tinggi dan menyebar dapat menyulitkan perusahaan untuk mengetahui titik rawan mana yang banyak mengalami kondisi "no drivers" atau yang hanya berupa *noise*. Clustering pada data scotty akan membantu kita melihat menentukan lokasi rawan tersebut agar perusahaan dapat melakukan peningkatan layanan dengan lebih optimal.
+
+Dari hasil eksplorasi sebelumnya kita mengetahui bahwa status `nodrivers` sering terjadi pada hari jumat di jam 15 sampai 19. Mari kita lihat jumlah `nodrivers` pada setiap tanggal dengan kondisi tersebut.
 
 ```{r}
 scotty_nodriver %>% 
@@ -540,7 +540,7 @@ scotty_nodriver %>%
   count(date, sort = T)
 ```
 
-Hasil diatas menunjukkan bahwa pada tanggal 2017-11-03 merupakan kasus `nodrivers` tertinggi, tanggal tersebut yang akan menjadi amatan kita dalam proses pembuatan cluster oleh sebab itu kita perlu mengambil data pada tanggal 2017-11-03 di jam 15 hingga 19.
+Hasil di atas menunjukkan bahwa pada tanggal 2017-11-03 merupakan kasus `nodrivers` tertinggi, tanggal tersebut yang akan menjadi amatan kita dalam proses pembuatan cluster oleh sebab itu kita perlu mengambil data pada tanggal 2017-11-03 di jam 15 hingga 19.
 
 ```{r}
 scotty_final <- scotty_nodriver %>% 
@@ -549,7 +549,7 @@ scotty_final <- scotty_nodriver %>%
 scotty_final
 ```
 
-Setelah melakukan filtering data yang terpilih sebanyak 945 baris, data inilah yang akan digunakan dalam proses clustering. Sebelum melakukan clustering ada baiknya kita memvisualisasikan data diatas pada peta (maps) sehingga kita mendapatkan gambaran bagaimana data tersebar. Untuk memvisualisasikan data pada peta (maps) bisa menggunakan package `leaflet` .
+Setelah melakukan filtering data yang terpilih sebanyak 945 baris, data inilah yang akan digunakan dalam proses clustering. Sebelum melakukan clustering ada baiknya kita memvisualisasikan data di atas pada peta (maps) sehingga kita mendapatkan gambaran bagaimana data tersebar. Untuk memvisualisasikan data pada peta (maps) bisa menggunakan package `leaflet` .
 
 ```{r}
 scotty_final %>% 
@@ -600,7 +600,7 @@ dbscan2 <- scotty_final %>%
 dbscan2
 ```
 
-Cluster yang terbentuk dengan menggunakan eps 0.01 dan minpts 9 adalah 9 cluster. Selain 9 cluster tersebut terdapat 242 data yang tidak masuk cluster manapun atau bisa disebut sebagai noise. Hasil cluster diatas dapat divisualisasikan pada peta namun sebelumnya label cluster tersebut perlu kita ambil dan memasukkannya pada data `scotty_final`. 
+Cluster yang terbentuk dengan menggunakan eps 0.01 dan minpts 9 adalah 9 cluster. Selain 9 cluster tersebut terdapat 242 data yang tidak masuk cluster manapun atau bisa disebut sebagai noise. Hasil cluster di atas dapat divisualisasikan pada peta namun sebelumnya label cluster tersebut perlu kita ambil dan memasukkannya pada data `scotty_final`. 
 
 ```{r}
 scotty_final <- scotty_final %>% 
@@ -622,7 +622,7 @@ pal_col <- data.frame(
 pal_col
 ```
 
-Refrensi warna diatas bisa kita gabungkan dengan data scotty_final dengan menggunakan fungsi `left_join()` sehingga pada data scotty_final akan terbentuk kolom baru yaitu col. 
+Refrensi warna di atas bisa kita gabungkan dengan data scotty_final dengan menggunakan fungsi `left_join()` sehingga pada data scotty_final akan terbentuk kolom baru yaitu col. 
 
 ```{r}
 # join pal color with dataframe
@@ -639,13 +639,11 @@ scotty_final %>%
 ```
 
 
-Visualisasi diatas menampilkan 9 cluster yang diwakili tiap warna tanpa menampilkan noise. Daerah tempat cluster terbentuk merupakan daerah yang memiliki kondisi `nodrivers` cukup tinggi di hari jumat pada pukul 15 hingga 19. Jika diperhatikan cluster 1 (biru tua) merupakan cluster terbesar, hal ini terjadi karena kerapatan didaerah tersebut lebih rapat dibandingkan dengan daerah lain.
+Visualisasi di atas menampilkan 9 cluster yang diwakili tiap warna tanpa menampilkan noise. Daerah tempat cluster terbentuk merupakan daerah yang memiliki kondisi "no drivers" cukup tinggi di hari jumat pada pukul 15 hingga 19. Jika diperhatikan cluster 1 (biru tua) merupakan cluster terbesar, hal ini terjadi karena kerapatan didaerah tersebut lebih rapat dibandingkan dengan daerah lain.
 
 Solusi untuk cluster memecah cluster yang besar adalah dengan melakuan clustering ulang pada cluster 1 saja, sehingga nilai ukuran kerapatannya (eps dan minpts) tidak mengganggu cluster yang sudah terbentuk.
 
-Dari hasil cluster diatas pemilik aplikasi dapat memfokuskan mitra driversnya pada cluster tersebut sehingga kejadian nodrivers bisa dikurangi
-
-
+Dari hasil cluster di atas, perusahaan ride sharing dapat memfokuskan alokasi mitra driversnya untuk berada pada lokasi cluster tersebut sehingga kejadian "no drivers" bisa dikurangi.
 
 ## Penerapan lainnya pada DBSCAN
 
